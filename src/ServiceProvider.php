@@ -11,7 +11,7 @@
 
 namespace Overtrue\LaravelQueryLogger;
 
-use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider as LaravelServiceProvider;
@@ -33,24 +33,22 @@ class ServiceProvider extends LaravelServiceProvider
             return;
         }
 
-        $this->app['events']->listen(QueryExecuted::class, function (QueryExecuted $query) {
-            if ($query->time < $this->app['config']->get('logging.query.slower_than', 0)) {
-                return;
+        DB::connection()->enableQueryLog();
+
+        $this->app['events']->listen(RequestHandled::class, function (RequestHandled $request) {
+            $queries = DB::getQueryLog();
+            if (!empty($queries)) {
+                $queries = collect($queries)->map(function ($query) {
+                    $res = [];
+                    $sqlWithPlaceholders = str_replace(['%', '?', '%s%s'], ['%%', '%s', '?'], $query['query']);
+                    $res['time'] = $this->formatDuration($query['time'] / 1000);
+                    $res['sql'] = vsprintf($sqlWithPlaceholders, $query['bindings']);
+                    return $res;
+                });
             }
 
-            $sqlWithPlaceholders = str_replace(['%', '?', '%s%s'], ['%%', '%s', '?'], $query->sql);
-
-            $bindings = $query->connection->prepareBindings($query->bindings);
-            $pdo = $query->connection->getPdo();
-            $realSql = $sqlWithPlaceholders;
-            $duration = $this->formatDuration($query->time / 1000);
-
-            if (count($bindings) > 0) {
-                $realSql = vsprintf($sqlWithPlaceholders, array_map([$pdo, 'quote'], $bindings));
-            }
             Log::channel(config('logging.query.channel', config('logging.default')))
-                ->debug(sprintf('[%s] [%s] %s | %s: %s', $query->connection->getDatabaseName(), $duration, $realSql,
-                request()->method(), request()->getRequestUri()));
+                ->debug(\sprintf('method: %s, uri: %s', request()->method(), request()->getRequestUri()), ['sqls' => $queries]);
         });
     }
 
