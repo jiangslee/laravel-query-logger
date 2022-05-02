@@ -6,7 +6,8 @@
         "laravel/framework": "^9.0"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3.0"
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "brainmaestro/composer-git-hooks": "dev-prepare-for-symfony-6"
     },
     "autoload": {
         "psr-4": {
@@ -55,5 +56,13 @@
         "test": "Run all tests.",
         "check-style": "Run style checks (only dry run - no fixing!).",
         "fix-style": "Run style checks and fix violations."
-    }
+    },
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/Jubeki/composer-git-hooks"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
