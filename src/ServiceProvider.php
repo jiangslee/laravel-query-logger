@@ -46,6 +46,11 @@ class ServiceProvider extends LaravelServiceProvider
                 $queries = array_merge($queries, DB::connection($db)->getQueryLog());
             }
 
+            // 如果没有sql就不记录日志了
+            if (empty($queries)) {
+                return;
+            };
+
             if (!empty($queries)) {
                 $queries = collect($queries)->map(function ($query) {
                     $res = [];
