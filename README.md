@@ -46,6 +46,8 @@ return [
         
         // Log Channel
         'channel' => 'stack',
+        // 'mysql', 'mysql_other'
+        'databases' => array_map('trim', explode(',', env('LOG_QUERY_DATABASES', 'mysql'))),
     ],
 ];
 ```

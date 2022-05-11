@@ -33,10 +33,19 @@ class ServiceProvider extends LaravelServiceProvider
             return;
         }
 
-        DB::connection()->enableQueryLog();
+        $databases = config('logging.query.databases', ['mysql']);
 
-        $this->app['events']->listen(RequestHandled::class, function (RequestHandled $request) {
-            $queries = DB::getQueryLog();
+        foreach ($databases as $db) {
+            DB::connection($db)->enableQueryLog();
+        }
+
+        $this->app['events']->listen(RequestHandled::class, function (RequestHandled $request) use ($databases) {
+            $queries = [];
+
+            foreach ($databases as $db) {
+                $queries = array_merge($queries, DB::connection($db)->getQueryLog());
+            }
+
             if (!empty($queries)) {
                 $queries = collect($queries)->map(function ($query) {
                     $res = [];
